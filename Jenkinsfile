@@ -13,8 +13,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
-                        mvn -B clean verify sonar:sonar \
-                        -Dsonar.projectKey=hiring-app
+                       mvn -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=hiring-app
                     '''
                 }
             }
