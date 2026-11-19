@@ -2,11 +2,26 @@
 pipeline {
     agent any
 
+    environment {
+        APP_VERSION = "1.0.${BUILD_NUMBER}"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+    }
+
     stages {
 
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Set Dynamic Maven Version') {
+            steps {
+                sh '''
+                    mvn versions:set \
+                    -DnewVersion=${APP_VERSION} \
+                    -DgenerateBackupPoms=false
+                '''
             }
         }
 
@@ -51,6 +66,7 @@ pipeline {
     </servers>
 </settings>
 EOF
+
                         mvn -B deploy -DskipTests -s settings.xml
                     '''
                 }
@@ -60,8 +76,12 @@ EOF
         stage('Trigger Docker Build') {
             steps {
                 build job: 'Hiring-App-Docker-Build',
-                      wait: true,
-                      propagate: true
+                    parameters: [
+                        string(name: 'APP_VERSION', value: "${APP_VERSION}"),
+                        string(name: 'IMAGE_TAG', value: "${IMAGE_TAG}")
+                    ],
+                    wait: true,
+                    propagate: true
             }
         }
     }
