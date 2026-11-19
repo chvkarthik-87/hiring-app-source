@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Maven Build') {
+            steps {
+                sh 'mvn -B clean verify'
+            }
+        }
+
+        stage('Verify Build') {
+            steps {
+                sh 'ls -l target/hiring-app-1.0.0.jar'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Hiring App CI Pipeline Successful'
+        }
+
+        failure {
+            echo 'Hiring App CI Pipeline Failed'
+        }
+    }
+}
