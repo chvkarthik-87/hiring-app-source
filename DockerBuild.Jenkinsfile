@@ -29,7 +29,7 @@ pipeline {
 
                         curl -f -L \
                         -u "$NEXUS_USER:$NEXUS_PASS" \
-                        "$NEXUS_URL/repository/maven-releases/com/hiring/hiring-app/1.0.0/hiring-app-1.0.0.jar" \
+                        "$NEXUS_URL/repository/maven-releases/com/hiring/hiring-app/1.0.0/hiring-app-1.0.1.jar" \
                         -o target/hiring-app-1.0.0.jar
 
                         ls -lh target/hiring-app-1.0.0.jar
