@@ -16,6 +16,9 @@ pipeline {
     }
 
     environment {
+        APP_VERSION = "${params.APP_VERSION}"
+        IMAGE_TAG = "${params.IMAGE_TAG}"
+
         DOCKER_IMAGE = 'chvkarthik/hiring-app'
         NEXUS_URL = 'http://172.31.20.79:8081'
         GITOPS_REPO = 'https://github.com/chvkarthik-87/hiring-app-k8s.git'
@@ -62,10 +65,12 @@ pipeline {
 
                         mkdir -p target
 
+                        echo "Downloading Maven version: $APP_VERSION"
+
                         curl --fail --show-error --location \
                         --retry 3 \
                         -u "$NEXUS_USER:$NEXUS_PASS" \
-                        "$NEXUS_URL/repository/maven-releases/com/hiring/hiring-app/${APP_VERSION}/hiring-app-${APP_VERSION}.jar" \
+                        "$NEXUS_URL/repository/maven-releases/com/hiring/hiring-app/$APP_VERSION/hiring-app-$APP_VERSION.jar" \
                         -o target/app.jar
 
                         test -s target/app.jar
