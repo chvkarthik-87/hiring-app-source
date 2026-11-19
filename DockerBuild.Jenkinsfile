@@ -29,10 +29,10 @@ pipeline {
 
                         curl -f -L \
                         -u "$NEXUS_USER:$NEXUS_PASS" \
-                        "$NEXUS_URL/repository/maven-releases/com/hiring/hiring-app/1.0.0/hiring-app-1.0.1.jar" \
-                        -o target/hiring-app-1.0.0.jar
+                        "$NEXUS_URL/repository/maven-releases/com/hiring/hiring-app/1.0.1/hiring-app-1.0.1.jar" \
+                        -o target/hiring-app-1.0.1.jar
 
-                        ls -lh target/hiring-app-1.0.0.jar
+                        ls -lh target/hiring-app-1.0.1.jar
                     '''
                 }
             }
@@ -67,15 +67,69 @@ pipeline {
                 }
             }
         }
+
+        stage('Update GitOps Repository') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'github-k8s-creds',
+                        usernameVariable: 'GIT_USER',
+                        passwordVariable: 'GIT_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set +x
+
+                        cat > askpass.sh <<'EOF'
+#!/bin/sh
+case "$1" in
+    *Username*) printf '%s' "$GIT_USER" ;;
+    *Password*) printf '%s' "$GIT_TOKEN" ;;
+esac
+EOF
+
+                        chmod 700 askpass.sh
+
+                        export GIT_ASKPASS="$WORKSPACE/askpass.sh"
+                        export GIT_TERMINAL_PROMPT=0
+
+                        git clone \
+                        https://github.com/chvkarthik-87/hiring-app-k8s.git \
+                        gitops
+
+                        cd gitops
+
+                        sed -i -E \
+                        "s#(image:[[:space:]]*chvkarthik/hiring-app:).*#\\1${BUILD_NUMBER}#" \
+                        k8s/deployment.yaml
+
+                        git config user.name "Jenkins"
+                        git config user.email "jenkins@users.noreply.github.com"
+
+                        git add k8s/deployment.yaml
+
+                        if git diff --cached --quiet; then
+                            echo "No GitOps changes to commit"
+                        else
+                            git commit -m "Update hiring-app image to ${BUILD_NUMBER}"
+                            git push origin main
+                        fi
+
+                        cd "$WORKSPACE"
+                        rm -f askpass.sh
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'Docker Image Build and Push Successful'
+            echo 'Docker Image Build, Push and GitOps Update Successful'
         }
 
         failure {
-            echo 'Docker Image Build or Push Failed'
+            echo 'Docker or GitOps Pipeline Failed'
         }
     }
 }
