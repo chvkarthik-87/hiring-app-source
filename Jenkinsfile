@@ -51,21 +51,28 @@ pipeline {
     </servers>
 </settings>
 EOF
-
                         mvn -B deploy -DskipTests -s settings.xml
                     '''
                 }
+            }
+        }
+
+        stage('Trigger Docker Build') {
+            steps {
+                build job: 'Hiring-App-Docker-Build',
+                      wait: true,
+                      propagate: true
             }
         }
     }
 
     post {
         success {
-            echo 'CI, SonarQube Analysis and Nexus Upload Successful'
+            echo 'CI, SonarQube, Nexus and Docker Trigger Successful'
         }
 
         failure {
-            echo 'CI Pipeline Failed'
+            echo 'CI/CD Pipeline Failed'
         }
 
         always {
